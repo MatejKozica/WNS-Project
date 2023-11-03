@@ -1,0 +1,20 @@
+version: "3"
+
+services:
+  wns_project_api:
+    container_name: wns_project_api
+    build:
+      context: .
+    tty: true
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - wns_project_db
+    command: "/app/entrypoint.sh api_dev"
+    ports:
+      - "8000:8000"
+
+volumes:
+  database:
