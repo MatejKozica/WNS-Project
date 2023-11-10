@@ -1,5 +1,13 @@
 version: "3"
 
+volumes:
+  static:
+    driver: local
+
+networks:
+  wns:
+    name: wns_network
+
 services:
   wns_project_api:
     container_name: wns_project_api
@@ -10,11 +18,39 @@ services:
       - .:/app
     env_file:
       - .env
-    depends_on:
-      - wns_project_db
     command: "/app/entrypoint.sh api_dev"
     ports:
       - "8000:8000"
+    networks:
+      - wns
 
-volumes:
-  database:
+  wns_redis:
+    container_name: wns_redis
+    image: redis
+    networks:
+      - wns
+  
+  worker:
+    container_name: celery_worker_wns
+    build:
+      context: .
+    command: "/app/entrypoint.sh worker"
+    networks:
+      - wns
+
+  scheduler:
+    container_name: celery_scheduler_wns
+    build:
+      context: .
+    command: "/app/entrypoint.sh scheduler"
+    networks:
+      - wns
+
+  plane_scanner:
+    container_name: plane_scanner
+    image: jraviles/dump1090
+    devices:
+      - /dev/bus/usb
+    restart: unless-stopped
+    networks:
+      - wns
