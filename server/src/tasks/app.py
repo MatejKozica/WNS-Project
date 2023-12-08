@@ -1,6 +1,9 @@
 import requests
 from celery import Celery
 
+from src.cache import cache
+
+
 redis_url = "redis://wns_redis:6379"
 celery = Celery(__name__, broker=redis_url, result_backend=redis_url)
 celery.conf.beat_schedule = {
@@ -38,12 +41,18 @@ def get_flight_radar_data(flight):
 @celery.task(name="collect_data")
 def collect_data():
     resp = requests.get("http://plane_scanner:8080/data/aircraft.json")
-    resp.raise_for_status()
+    try:
+        resp.raise_for_status()
+    except:
+        print("nothing found")
     data = resp.json()
     aircrafts = []
     for aircraft in data.get("aircraft", []):
         if flight := aircraft.get("flight"):
             flight_data = get_flight_radar_data(flight.strip())
             aircrafts.append({**flight_data, "dump1090_data": data})
-
-    print(aircrafts)
+            if flight_data:
+                flight_id = flight_data["identification"]["number"]["default"]
+                cache.set(flight_id, flight_data)
+                print(f"set flight with number{flight_id}")
+    cache.set("all_flights", aircrafts)
