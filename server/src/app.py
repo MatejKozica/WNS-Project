@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.cache import cache
 
+import json
+
 app = FastAPI()
 
 origins = ['http://localhost:3000']
@@ -18,6 +20,7 @@ app.add_middleware(
 @app.get("/flights")
 async def flights_all():
     data = cache.get("all_flights")
+
     return data
 
 
@@ -27,3 +30,9 @@ async def flights_all(flight_id):
     return data
 
 
+
+@app.get("/test")
+async def test_data():
+    with open("test.json") as file:
+        result = file.read()
+    return json.loads(result)
