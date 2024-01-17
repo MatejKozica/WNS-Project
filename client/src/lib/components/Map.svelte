@@ -1,18 +1,24 @@
 <script>
 import L from 'leaflet';
 import * as markerIcons from '../../assets/markers';
-import {onMount, getContext} from 'svelte';
-
-let data = getContext('data');
-
-console.log('data', data)
+import {selectedFlightStore} from '../../store/flightsStore';
+import fetchStore from '../../services/fetch'
+import { onMount } from 'svelte';
 
 let map;
 let markerLayers;
-let markers = new Map();
 
-const initialView = [43.5147, 16.4435];
-const markerLocations = [initialView];
+const [data, loading, error, get] = fetchStore('http://localhost:8000/test');
+
+data.subscribe(value => updateMarkers(value))
+
+onMount(get);
+
+setInterval(() => {
+  get();
+}, 2000)
+
+const initialView = [43.577499, 16.417471];
 
 function createMap(container) {
     let m = L.map(container, {
@@ -30,33 +36,26 @@ function createMap(container) {
     return m;
 }
 
-function markerIcon() {
-    let html = `<div class="map-marker">${markerIcons.library}</div>`;
+function markerIcon(label) {
+    let html = `<label>${label}</label><div class="map-marker">${markerIcons.library}</div>`;
     return L.divIcon({
         html,
         className: 'map-marker'
     });
 }
 
-function createMarker(loc) {
-    let icon = markerIcon();
-    let marker = L.marker(loc, {
+function createMarker(data) {
+    let icon = markerIcon(data.flightNumber);
+    let marker = L.marker(data.location, {
         icon
-    });
+    })
+    .on('click', () => selectedFlightStore.set(data));
 
     return marker;
 }
 
 function mapAction(container) {
     map = createMap(container);
-
-    markerLayers = L.layerGroup()
-    for (let location of markerLocations) {
-        let m = createMarker(location);
-        markerLayers.addLayer(m);
-    }
-
-    markerLayers.addTo(map);
 
     return {
         destroy: () => {
@@ -66,12 +65,24 @@ function mapAction(container) {
     };
 }
 
+function updateMarkers(markers){
+    if(!markers.length){
+        return;
+    }
+    
+    markerLayers = L.layerGroup()
+    for (let marker of markers) {
+        let m = createMarker(marker);
+        markerLayers.addLayer(m);
+    }
+
+    markerLayers.addTo(map);
+}
 
 </script>
 
 <div class="map" use:mapAction/>
 
-  
 <style>
 .map {
     height: 97vh;
