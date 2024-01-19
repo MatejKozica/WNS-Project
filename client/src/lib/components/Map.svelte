@@ -7,10 +7,13 @@ import { onMount } from 'svelte';
 
 let map;
 let markerLayers;
+let lines;
 
 const [data, loading, error, get] = fetchStore('http://localhost:8000/test');
 
-data.subscribe(value => updateMarkers(value))
+data.subscribe(value => updateMarkers(value));
+selectedFlightStore.subscribe(value => updateLines(value?.trail))
+
 
 onMount(get);
 
@@ -37,7 +40,7 @@ function createMap(container) {
 }
 
 function markerIcon(label) {
-    let html = `<label>${label}</label><div class="map-marker">${markerIcons.library}</div>`;
+    let html = `<div style="transform: translateY(-25px)"><label>${label}</label><div class="map-marker">${markerIcons.library}</div></div>`;
     return L.divIcon({
         html,
         className: 'map-marker'
@@ -78,6 +81,14 @@ function updateMarkers(markers){
 
     markerLayers.addTo(map);
 }
+
+function updateLines(markers) {
+    if(!markers?.length){
+        return;
+    }
+	lines = L.polyline(markers, { color: '#E4E', opacity: 0.5 });
+    lines.addTo(map);
+	}
 
 </script>
 
