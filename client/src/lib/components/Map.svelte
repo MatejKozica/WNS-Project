@@ -9,9 +9,12 @@ let map;
 let markerLayers;
 let lines;
 
-const [data, loading, error, get] = fetchStore('http://localhost:8000/test');
+const [data, loading, error, get] = fetchStore('http://localhost:8000/flights');
 
-data.subscribe(value => updateMarkers(value));
+data.subscribe(value => {
+    updateMarkers(value); 
+    updateLines(value.find(el => el.flightNumber === $selectedFlightStore.flightNumber)?.trail);
+});
 selectedFlightStore.subscribe(value => updateLines(value?.trail))
 
 
@@ -69,6 +72,10 @@ function mapAction(container) {
 }
 
 function updateMarkers(markers){
+    if(markerLayers){
+        map.removeLayer(markerLayers);
+        markerLayers = null;
+    }
     if(!markers.length){
         return;
     }
@@ -80,9 +87,14 @@ function updateMarkers(markers){
     }
 
     markerLayers.addTo(map);
+    updateLines($selectedFlightStore.trail)
 }
 
 function updateLines(markers) {
+    if (lines) {
+        map.removeLayer(lines)
+        lines = null;
+    }
     if(!markers?.length){
         return;
     }

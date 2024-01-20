@@ -7,9 +7,9 @@ from src.cache import cache
 redis_url = "redis://wns_redis:6379"
 celery = Celery(__name__, broker=redis_url, result_backend=redis_url)
 celery.conf.beat_schedule = {
-    'collect_data_5': {
+    'collect_data_2': {
         'task': 'collect_data',
-        'schedule': 5,
+        'schedule': 2,
     },
 }
 celery.conf.timezone = 'UTC'
@@ -35,7 +35,10 @@ def get_flight_radar_data(flight):
     flight_data = requests.get(
         f"https://data-live.flightradar24.com/clickhandler/?version=1.5&flight={target}"
     )
-    return flight_data.json()
+    try:
+        return flight_data.json()
+    except:
+        return {}
 
 
 @celery.task(name="collect_data")
